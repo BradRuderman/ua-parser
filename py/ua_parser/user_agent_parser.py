@@ -31,8 +31,6 @@ ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.abspath(os.path.join(ROOT_DIR, '..', 'data'))
 regex_dir = ROOT_DIR if os.path.exists(os.path.join(ROOT_DIR, 'regexes.yaml')) else DATA_DIR
 
-from pkg_resources import resource_filename
-
 
 class UserAgentParser(object):
     def __init__(self, pattern, family_replacement=None, v1_replacement=None, v2_replacement=None):
@@ -115,7 +113,10 @@ class OSParser(object):
         match = self.user_agent_re.search(user_agent_string)
         if match:
             if self.os_replacement:
-                os = self.os_replacement
+                if re.search(r'\$1', self.os_replacement):
+                    os = re.sub(r'\$1', match.group(1), self.os_replacement)
+                else:
+                    os = self.os_replacement
             else:
                 os = match.group(1)
 
@@ -406,8 +407,13 @@ UA_PARSER_YAML = os.getenv("UA_PARSER_YAML")
 regexes = None
 
 if not UA_PARSER_YAML:
-    yamlPath = resource_filename(__name__, 'regexes.yaml')
-    json_path = resource_filename(__name__, 'regexes.json')
+    try:
+        from pkg_resources import resource_filename
+        yamlPath = resource_filename(__name__, 'regexes.yaml')
+        json_path = resource_filename(__name__, 'regexes.json')
+    except ImportError:
+        yamlPath = os.path.join(ROOT_DIR, 'regexes.yaml')
+        json_path = os.path.join(ROOT_DIR, 'regexes.json')
 else:
     import yaml
 
